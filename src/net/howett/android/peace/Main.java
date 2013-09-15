@@ -21,6 +21,12 @@ public class Main {
 			}
 		});
 	}
+	static boolean shouldDisplayIcon(String i) {
+		if(i.equals("gpsone") || i.equals("beats_effect")) {
+			return false;
+		}
+		return true;
+	}
 	static void initialize() {
 		nop("android.net.wifi.WifiStateMachine", "sendVzwStatusNotification", 0, Integer.TYPE);
 		nop("com.android.server.usb.UsbDeviceManager$UsbHandler", "updateAdbNotification", null, (Class<?>[])null);
@@ -42,6 +48,21 @@ public class Main {
 				} catch(Exception e) {
 					Log.e("SENSELESS", "Failed to replace 3G/LTE icons.", e);
 				}
+			}
+		});
+
+		final Predicate shouldDisplayIconPredicate = new Predicate() {
+			public boolean test(Object object, Object... args) {
+				return shouldDisplayIcon((String)args[0]);
+			}
+		};
+
+		MS.hookClassLoad("com.android.server.StatusBarManagerService", new MS.ClassLoadHook() {
+			public void classLoaded(final Class<?> _class) {
+				try {
+					MS.hookMethod(_class, _class.getDeclaredMethod("setIconVisibility", String.class, Boolean.TYPE), new PredicatedMethodAlteration(null, shouldDisplayIconPredicate));
+					MS.hookMethod(_class, _class.getDeclaredMethod("setIcon", String.class, String.class, Integer.TYPE, Integer.TYPE, String.class), new PredicatedMethodAlteration(null, shouldDisplayIconPredicate));
+				} catch (Exception e) { Log.w("SENSELESS", "Failed to collect method.", e); }
 			}
 		});
 	}
